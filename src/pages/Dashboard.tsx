@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useExpenses } from '@/hooks/useExpenses';
 import { Header } from '@/components/layout/Header';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -36,7 +36,7 @@ export const Dashboard = () => {
     ? ((thisMonthExpenses - lastMonthExpenses) / lastMonthExpenses) * 100 
     : 0;
 
-  const handleSaveExpense = (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
+  const handleSaveExpense = useCallback((expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
     if (editingExpense) {
       updateExpense(editingExpense.id, expenseData);
       setEditingExpense(null);
@@ -44,17 +44,22 @@ export const Dashboard = () => {
       addExpense(expenseData);
     }
     setIsFormOpen(false);
-  };
+  }, [editingExpense, updateExpense, addExpense]);
 
-  const handleEditExpense = (expense: Expense) => {
+  const handleEditExpense = useCallback((expense: Expense) => {
     setEditingExpense(expense);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleAddNew = () => {
+  const handleAddNew = useCallback(() => {
     setEditingExpense(null);
     setIsFormOpen(true);
-  };
+  }, []);
+
+  const handleCloseForm = useCallback(() => {
+    setIsFormOpen(false);
+    setEditingExpense(null);
+  }, []);
 
   if (loading) {
     return (
@@ -108,15 +113,23 @@ export const Dashboard = () => {
           <div className="lg:col-span-1">
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" className="w-full h-24 text-lg" onClick={handleAddNew}>
+                <Button 
+                  size="lg" 
+                  className="w-full h-24 text-lg" 
+                  onClick={handleAddNew}
+                  aria-label="Add new expense"
+                >
                   <Plus className="h-6 w-6 mr-2" />
                   Add New Expense
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md" aria-describedby="expense-form-description">
+                <div id="expense-form-description" className="sr-only">
+                  Form to add or edit expense details including amount, description, category, and date
+                </div>
                 <ExpenseForm
                   onSave={handleSaveExpense}
-                  onCancel={() => setIsFormOpen(false)}
+                  onCancel={handleCloseForm}
                   expense={editingExpense || undefined}
                 />
               </DialogContent>
